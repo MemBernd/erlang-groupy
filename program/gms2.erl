@@ -1,8 +1,10 @@
 -module(gms2).
 -compile(export_all).
 -define(timeout, 2000).
+-define(arghh, 10).
 
 leader(Id, Master, Slaves, Group) ->
+    io:format("I, ~w am leader~n", [Id]),
     receive
         {mcast, Msg} ->
             bcast(Id, {msg, Msg}, Slaves),
@@ -19,7 +21,7 @@ leader(Id, Master, Slaves, Group) ->
     end.
 
 slave(Id, Master, Leader, Slaves, Group) ->
-    erlang:monitor(process, Leader),
+    io:format("I, ~w am slave~n", [Id]),
     receive
         {mcast, Msg} ->
             Leader ! {mcast, Msg},
@@ -56,6 +58,8 @@ start(Id) ->
     {ok, spawn_link(fun() -> init(Id, Self) end)}.
 
 init(Id, Master) ->
+    Rnd = random:uniform(1000),
+    random:seed(Rnd, Rnd, Rnd),
     leader(Id, Master, [], [Master]).
 
 start(Id, Grp) ->
@@ -63,17 +67,26 @@ start(Id, Grp) ->
     {ok, spawn_link(fun() -> init(Id, Grp, Self) end)}.
 
 init(Id, Grp, Master) ->
+    Rnd = random:uniform(1000),
+    random:seed(Rnd, Rnd, Rnd),
     Self = self(),
     Grp ! {join, Master, Self},
     receive
         {view, [Leader|Slaves], Group} ->
+            erlang:monitor(process, Leader),
             Master ! {view, Group},
             slave(Id, Master, Leader, Slaves, Group)
-        after 2000 ->
+        after ?timeout ->
             Master ! {error, "no reply from leader"}
     end.
 
-bcast(Id, {msg, Msg}, Slaves) ->
-    lists:foreach(fun(Slave) -> Slave ! {msg, Msg} end, Slaves);
-bcast(Id, {view, View, Group}, Slaves) ->
-    lists:foreach(fun(Slave) -> Slave ! {view, View, Group} end, Slaves).
+bcast(Id, Msg, Slaves) ->
+    lists:foreach(fun(Slave) -> Slave ! Msg, crash(Id) end, Slaves).
+crash(Id) ->
+    case random:uniform(?arghh) of
+        ?arghh ->
+            io:format("leader ~w: crash~n", [Id]),
+            exit(no_luck);
+        _ ->
+            ok
+        end.
