@@ -33,8 +33,8 @@ init(Id, Module, Rnd, Peer, Sleep) ->
 % Wait for the first view to be delivered
 
 join(Id, Cast) ->
-    receive 
-	{view, _} ->
+    receive
+	{view, _, _} ->
 	    Ref = make_ref(),
 	    Cast ! {mcast, {state_request, Ref}},
 	    state(Id, Ref);
@@ -56,18 +56,18 @@ state(Id, Ref) ->
     end.
 
 % we're either the first worker or has joined an existing group, but
-% know we know everything to continue. 
-		
+% know we know everything to continue.
+
 init_cont(Id, Rnd, Cast, Color, Sleep) ->
     random:seed(Rnd, Rnd, Rnd),
     Title = "Worker: " ++ integer_to_list(Id),
     Gui = gui:start(Title, self()),
-    Gui ! {color, Color}, 
+    Gui ! {color, Color},
     worker(Id, Cast, Color, Gui, Sleep),
     Cast ! stop,
     Gui ! stop.
 
-% The worker process, 
+% The worker process,
 
 worker(Id, Cast, Color, Gui, Sleep) ->
     Wait = wait(Sleep),
@@ -82,29 +82,30 @@ worker(Id, Cast, Color, Gui, Sleep) ->
 
 	%% Someone needs to know the state at this point
 	{state_request, Ref} ->
+        io:format("Ref ~w~n", [Ref]),
 	    Cast ! {mcast, {state, Ref, Color}},
 	    worker(Id, Cast, Color, Gui, Sleep);
 
-	%% A reply on a state request but we don't care	
+	%% A reply on a state request but we don't care
 	{state, _, _} ->
-	    worker(Id, Cast, Color, Gui, Sleep);	    
+	    worker(Id, Cast, Color, Gui, Sleep);
 
 	%% Someone wants to join our group
 	{join, Peer, Gms} ->
 	    Cast ! {join, Peer, Gms},
-	    worker(Id, Cast, Color, Gui, Sleep);	    
+	    worker(Id, Cast, Color, Gui, Sleep);
 
 	%% A view, who cares
 	{view, _} ->
-	    worker(Id, Cast, Color, Gui, Sleep);	    
+	    worker(Id, Cast, Color, Gui, Sleep);
 
 	%% So I should stop for a while
 	freeze ->
-	    frozen(Id, Cast, Color, Gui, Sleep);	   
+	    frozen(Id, Cast, Color, Gui, Sleep);
 
 	%% Change the sleep time
 	{sleep, Slp} ->
-	    worker(Id, Cast, Color, Gui, Slp);	  
+	    worker(Id, Cast, Color, Gui, Slp);
 
 	%% That's all folks
 	stop ->
@@ -112,8 +113,8 @@ worker(Id, Cast, Color, Gui, Sleep) ->
 
 	%% Someone from above wants us to multicast a message.
 	{send, Msg} ->
-	    Cast !  {mcast, Msg},	    
-	    worker(Id, Cast, Color, Gui, Sleep);	    
+	    Cast !  {mcast, Msg},
+	    worker(Id, Cast, Color, Gui, Sleep);
 
 	Error ->
     	    io:format("strange message: ~w~n", [Error]),
@@ -123,12 +124,12 @@ worker(Id, Cast, Color, Gui, Sleep) ->
 	    %% Ok, let's propose a change of colors
 	    %% io:format("worker ~w mcast message~n", [Id]),
 	    Cast !  {mcast, {change, random:uniform(?change)}},
-	    worker(Id, Cast, Color, Gui, Sleep)	    
+	    worker(Id, Cast, Color, Gui, Sleep)
     end.
 
 
 frozen(Id, Cast, Color, Gui, Sleep) ->
-    receive 
+    receive
 	go ->
 	    worker(Id, Cast, Color, Gui, Sleep);
 	stop ->
@@ -136,30 +137,24 @@ frozen(Id, Cast, Color, Gui, Sleep) ->
 
 	%% Someone from above wants us to multicast a message.
 	{send, Msg} ->
-	    Cast !  {mcast, Msg},	    
+	    Cast !  {mcast, Msg},
 	    frozen(Id, Cast, Color, Gui, Sleep)
     end.
 
 
 wait(Sleep) ->
-    if 
-	Sleep == 0 -> 
-	    0; 
-	true -> 
-	    random:uniform(Sleep) 
+    if
+	Sleep == 0 ->
+	    0;
+	true ->
+	    random:uniform(Sleep)
     end.
 
 %% Change of color, we rotate RGB and add N. Since we also make a
 %% rotations we will end up in very different state if we receive
 %% messages in different order. If we have an initial state of {1,2,3}
 %% and receive messages 10 and 20 we would end up in either {3,11,22}
-%% or {3,21,12} depending on the order. 
+%% or {3,21,12} depending on the order.
 
 change_color(N, {R,G,B}) ->
     {G, B, ((R+N) rem 256)}.
-
-     
-
-
- 
-

@@ -1,0 +1,5 @@
+Wprime = test:first(1, gms3, 1000),
+Wtwo = test:add(2, gms3, Wprime, 1000),
+Wthree = test:add(3, gms3, Wprime, 1000),
+Wfour = test:add(4, gms3, Wprime, 1000).
+Wthree ! stop
