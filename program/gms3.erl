@@ -1,7 +1,7 @@
 -module(gms3).
 -compile(export_all).
 -define(timeout, 2000).
--define(arghh, 1000).
+-define(arghh, 100).
 -define(zero, 0).
 
 leader(Id, Master, Slaves, Group, N) ->
