@@ -1,7 +1,7 @@
 -module(gms3).
 -compile(export_all).
 -define(timeout, 2000).
--define(arghh, 100).
+-define(arghh, 1000).
 -define(zero, 0).
 
 leader(Id, Master, Slaves, Group, N) ->
@@ -79,8 +79,8 @@ init(Id, Grp, Master) ->
         {view, [Leader|Slaves], Group, N} ->
             erlang:monitor(process, Leader),
             Master ! {view, Group},
-            slave(Id, Master, Leader, Slaves, Group, N, "nope")
-        after ?timeout ->
+            slave(Id, Master, Leader, Slaves, Group, N, "")
+        after 2000 ->
             Master ! {error, "no reply from leader"}
     end.
 

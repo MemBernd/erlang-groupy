@@ -24,7 +24,7 @@ add(N, Module, Wrk, Sleep) ->
 more(N, Module, Sleep) when N > 1 ->
     Wrk = first(1, Module, Sleep),
     Ns = lists:seq(2,N),
-    lists:foreach(fun(Id) -> add(Id, Module, Wrk, Sleep) end, Ns),
+    lists:map(fun(Id) -> add(Id, Module, Wrk, Sleep) end, Ns),
     Wrk.
 
 
